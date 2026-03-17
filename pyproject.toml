@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "jobsearch-agent"
+version = "0.1.0"
+description = "Airflow-ingested, LangGraph-searched job search system backed by PostgreSQL and pgvector."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "apache-airflow>=2.10",
+  "langchain>=0.3",
+  "langgraph>=0.2",
+  "pgvector>=0.3",
+  "psycopg[binary]>=3.2",
+  "pydantic>=2.8",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0",
+]
+
+[project.scripts]
+jobsearch-agent = "jobsearch_agent.cli:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]

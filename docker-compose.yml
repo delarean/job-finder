@@ -1,0 +1,59 @@
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: jobsearch
+      POSTGRES_USER: jobsearch
+      POSTGRES_PASSWORD: jobsearch
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  airflow-init:
+    image: apache/airflow:2.10.5
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://jobsearch:jobsearch@postgres:5432/jobsearch
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    volumes:
+      - ./airflow:/opt/airflow
+      - ./src:/opt/airflow/src
+    command: >
+      bash -lc "airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Admin --lastname User --role Admin --email admin@example.com || true"
+
+  airflow-webserver:
+    image: apache/airflow:2.10.5
+    depends_on:
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://jobsearch:jobsearch@postgres:5432/jobsearch
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/src
+    volumes:
+      - ./airflow:/opt/airflow
+      - ./src:/opt/airflow/src
+    ports:
+      - "8080:8080"
+    command: webserver
+
+  airflow-scheduler:
+    image: apache/airflow:2.10.5
+    depends_on:
+      - airflow-init
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://jobsearch:jobsearch@postgres:5432/jobsearch
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/src
+    volumes:
+      - ./airflow:/opt/airflow
+      - ./src:/opt/airflow/src
+    command: scheduler
+
+volumes:
+  postgres_data:

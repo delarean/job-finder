@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.egg-info/
+
+# Local env/output
+.env
+output/
+
+# OMX runtime artifacts
+.omx/context/
+.omx/logs/
+.omx/state/
+.omx/notepad.md
+.omx/metrics.json
+.omx/tmux-hook.json
