@@ -10,6 +10,9 @@ from jobsearch_agent.pipelines.search_graph import run_search_pipeline
 
 
 class FakeStore(BaseStore):
+    def __init__(self) -> None:
+        self.search_runs = []
+
     def upsert_jobs(self, jobs, run):
         return len(jobs)
 
@@ -30,6 +33,9 @@ class FakeStore(BaseStore):
             )
         ]
 
+    def record_search_run(self, run) -> None:
+        self.search_runs.append(run)
+
 
 class SearchPipelineIntegrationTests(unittest.TestCase):
     def test_search_pipeline_exports_results(self) -> None:
@@ -37,9 +43,13 @@ class SearchPipelineIntegrationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             os.chdir(tmpdir)
             try:
-                result = run_search_pipeline(FakeStore(), SearchRequest(query="python"), embedding=[0.0] * 8)
+                store = FakeStore()
+                result = run_search_pipeline(store, SearchRequest(query="python"), embedding=[0.0] * 8)
                 self.assertEqual(len(result["results"]), 1)
                 self.assertTrue(result["export_path"].endswith("output/jobs.csv"))
+                self.assertEqual(len(store.search_runs), 2)
+                self.assertEqual(store.search_runs[-1].match_count, 1)
+                self.assertEqual(store.search_runs[-1].clarified_query, "python")
             finally:
                 os.chdir(current)
 
