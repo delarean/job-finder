@@ -74,6 +74,8 @@ class SearchRunSummary:
     query: str
     started_at: datetime
     completed_at: datetime | None = None
+    clarified_query: str | None = None
+    filters: dict[str, Any] = field(default_factory=dict)
     match_count: int = 0
     export_path: str | None = None
     analysis: dict[str, Any] = field(default_factory=dict)

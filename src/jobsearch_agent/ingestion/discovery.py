@@ -10,5 +10,8 @@ def discover_candidates(request: IngestionRequest) -> list[dict]:
     if not request.sources or "remoteok" in request.sources:
         candidates.extend(discover_remoteok_jobs())
     if not request.sources or "tavily" in request.sources:
-        candidates.extend(discover_with_tavily())
+        try:
+            candidates.extend(discover_with_tavily())
+        except Exception:
+            pass
     return candidates

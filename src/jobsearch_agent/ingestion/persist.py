@@ -15,6 +15,8 @@ def persist_records(store: BaseStore, records: list[JobRecord], airflow_run_id: 
         normalized_count=len(records),
         embedded_count=sum(1 for record in records if record.embedding),
     )
+    store.record_ingestion_run(summary)
     summary.upserted_count = store.upsert_jobs(records, summary)
     summary.completed_at = datetime.now(timezone.utc)
+    store.record_ingestion_run(summary)
     return summary

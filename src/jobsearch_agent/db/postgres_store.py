@@ -1,16 +1,24 @@
 from __future__ import annotations
 
 from dataclasses import asdict
+from pathlib import Path
 from typing import Any
 
 from jobsearch_agent.db.base import BaseStore
 from jobsearch_agent.db.query_builder import build_hybrid_query, build_hybrid_sql
-from jobsearch_agent.models import IngestionRunSummary, JobRecord, SearchRequest
+from jobsearch_agent.models import IngestionRunSummary, JobRecord, SearchRequest, SearchRunSummary
 
 
 class PostgresStore(BaseStore):
     def __init__(self, dsn: str) -> None:
         self.dsn = dsn
+
+    def initialize_schema(self) -> None:
+        schema_sql = Path(__file__).with_name("schema.sql").read_text(encoding="utf-8")
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(schema_sql)
+            conn.commit()
 
     def _connect(self):
         try:
@@ -55,6 +63,70 @@ class PostgresStore(BaseStore):
                 cur.executemany(sql, payloads)
             conn.commit()
         return len(payloads)
+
+    def record_ingestion_run(self, run: IngestionRunSummary) -> None:
+        sql = """
+        INSERT INTO ingestion_runs (
+            run_id, airflow_run_id, started_at, completed_at, candidate_count,
+            fetched_count, normalized_count, embedded_count, upserted_count,
+            error_count, status
+        )
+        VALUES (
+            %(run_id)s, %(airflow_run_id)s, %(started_at)s, %(completed_at)s, %(candidate_count)s,
+            %(fetched_count)s, %(normalized_count)s, %(embedded_count)s, %(upserted_count)s,
+            %(error_count)s, %(status)s
+        )
+        ON CONFLICT (run_id) DO UPDATE SET
+            airflow_run_id = EXCLUDED.airflow_run_id,
+            completed_at = EXCLUDED.completed_at,
+            candidate_count = EXCLUDED.candidate_count,
+            fetched_count = EXCLUDED.fetched_count,
+            normalized_count = EXCLUDED.normalized_count,
+            embedded_count = EXCLUDED.embedded_count,
+            upserted_count = EXCLUDED.upserted_count,
+            error_count = EXCLUDED.error_count,
+            status = EXCLUDED.status
+        """
+        payload = asdict(run)
+        payload["status"] = "completed" if run.completed_at else "running"
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, payload)
+            conn.commit()
+
+    def record_search_run(self, run: SearchRunSummary) -> None:
+        sql = """
+        INSERT INTO search_runs (
+            run_id, query, clarified_query, filters_json, started_at, completed_at,
+            match_count, export_path, analysis_json
+        )
+        VALUES (
+            %(run_id)s, %(query)s, %(clarified_query)s, %(filters_json)s, %(started_at)s, %(completed_at)s,
+            %(match_count)s, %(export_path)s, %(analysis_json)s
+        )
+        ON CONFLICT (run_id) DO UPDATE SET
+            clarified_query = EXCLUDED.clarified_query,
+            filters_json = EXCLUDED.filters_json,
+            completed_at = EXCLUDED.completed_at,
+            match_count = EXCLUDED.match_count,
+            export_path = EXCLUDED.export_path,
+            analysis_json = EXCLUDED.analysis_json
+        """
+        payload = {
+            "run_id": run.run_id,
+            "query": run.query,
+            "clarified_query": run.clarified_query,
+            "filters_json": run.filters,
+            "started_at": run.started_at,
+            "completed_at": run.completed_at,
+            "match_count": run.match_count,
+            "export_path": run.export_path,
+            "analysis_json": run.analysis,
+        }
+        with self._connect() as conn:
+            with conn.cursor() as cur:
+                cur.execute(sql, payload)
+            conn.commit()
 
     def hybrid_search(self, request: SearchRequest, embedding: list[float]) -> list[dict[str, Any]]:
         query = build_hybrid_query(request)
