@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from jobsearch_agent.models import SearchRequest
 
@@ -17,7 +17,7 @@ class HybridQuery:
 def build_hybrid_query(request: SearchRequest) -> HybridQuery:
     filters: dict[str, object] = {
         "posted_after": (
-            datetime.now(timezone.utc) - timedelta(days=request.recency_days)
+            datetime.now(UTC) - timedelta(days=request.recency_days)
         ).isoformat(),
     }
     if request.location:

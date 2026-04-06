@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
-from typing import Sequence
+from collections.abc import Sequence
 
 from jobsearch_agent.config import get_settings
 from jobsearch_agent.db.postgres_store import PostgresStore

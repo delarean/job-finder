@@ -27,7 +27,8 @@ def _fetch_extract(ti, **context):
 
 
 def _normalize(ti, **context):
-    return [asdict(record) for record in normalize_records(ti.xcom_pull(task_ids="fetch_extract"))]
+    pulled = ti.xcom_pull(task_ids="fetch_extract")
+    return [asdict(record) for record in normalize_records(pulled)]
 
 
 def _embed(ti, **context):
@@ -43,7 +44,8 @@ def _persist(ti, dag_run=None, **context):
     settings = get_settings()
     store = PostgresStore(settings.postgres_dsn)
     records = [JobRecord(**payload) for payload in ti.xcom_pull(task_ids="embed")]
-    return persist_records(store, records, airflow_run_id=getattr(dag_run, "run_id", str(uuid4()))).run_id
+    run_id = getattr(dag_run, "run_id", str(uuid4()))
+    return persist_records(store, records, airflow_run_id=run_id).run_id
 
 
 with DAG(
@@ -55,7 +57,10 @@ with DAG(
     tags=["jobsearch", "ingestion"],
 ) as dag:
     discover = PythonOperator(task_id="discover", python_callable=_discover)
-    fetch_extract = PythonOperator(task_id="fetch_extract", python_callable=_fetch_extract)
+    fetch_extract = PythonOperator(
+        task_id="fetch_extract",
+        python_callable=_fetch_extract,
+    )
     normalize = PythonOperator(task_id="normalize", python_callable=_normalize)
     embed = PythonOperator(task_id="embed", python_callable=_embed)
     persist = PythonOperator(task_id="persist", python_callable=_persist)

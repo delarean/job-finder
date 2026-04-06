@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from dataclasses import replace
 import unittest
+from dataclasses import replace
 
 from jobsearch_agent.ingestion.discovery import discover_candidates
 from jobsearch_agent.ingestion.embed import embed_records

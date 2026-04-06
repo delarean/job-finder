@@ -4,8 +4,7 @@ __pycache__/
 *.py[cod]
 *.egg-info/
 
-# Local env/output
-.env
+# Local output
 output/
 
 # OMX runtime artifacts
@@ -15,3 +14,10 @@ output/
 .omx/notepad.md
 .omx/metrics.json
 .omx/tmux-hook.json
+
+# airflow
+airflow/logs/
+
+.*/
+.*
+!.gitignore

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from uuid import uuid4
 
 from jobsearch_agent.agents.analysis_agent import analyze_jobs
@@ -21,7 +21,7 @@ def run_search_pipeline(
     run = SearchRunSummary(
         run_id=str(uuid4()),
         query=request.query,
-        started_at=datetime.now(timezone.utc),
+        started_at=datetime.now(UTC),
     )
     store.record_search_run(run)
     understanding = understand_query(request)
@@ -35,7 +35,7 @@ def run_search_pipeline(
     run.match_count = len(results)
     run.export_path = export_path
     run.analysis = analysis
-    run.completed_at = datetime.now(timezone.utc)
+    run.completed_at = datetime.now(UTC)
     store.record_search_run(run)
     return {
         "understanding": understanding,
